@@ -1,0 +1,470 @@
+<!doctype html>
+<html lang="uk" data-scene="day">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>Мітки — задачі та результати</title>
+<style>
+/* ───────── Сцени (аніме-пейзаж) ───────── */
+:root{
+  --sky1:#2a78dc;--sky2:#5aa9f2;--sky3:#b5dffb;--sky4:#fdf1dc;
+  --sun:#fffbe6;--glow:#fff3b0;--cloud:#ffffff;--cshade:#c9d9f7;
+  --m1:#8fb2e2;--m2:#6690cc;--lake1:#9fd3f5;--lake2:#5d9fe0;
+  --h1:#6fcf78;--h2:#43a65a;--g:#2c7f43;--trunk:#4a2f38;
+  --b1:#ffc2dc;--b2:#ff9cc4;--b3:#ffe3ef;--stars:0;
+  --glass:rgba(14,19,36,.66);--glass2:rgba(255,255,255,.07);--line:rgba(255,255,255,.12);
+  --tx:#f3f5fb;--mut:#aab3c9;--acc:#ff8fbf;
+  --ok:#4ade80;--part:#fbbf24;--bad:#f87171;
+}
+:root[data-scene=sunset]{
+  --sky1:#2a2768;--sky2:#8a4a9c;--sky3:#f27a8c;--sky4:#ffd28c;
+  --sun:#fff0c2;--glow:#ffb36b;--cloud:#ffd9d2;--cshade:#c77aa6;
+  --m1:#7c5c9e;--m2:#5a3f82;--lake1:#f6a08f;--lake2:#8a5aa0;
+  --h1:#4d7360;--h2:#33574b;--g:#1f3d35;--trunk:#2e1c26;
+  --b1:#ffb0cf;--b2:#f57fae;--b3:#ffd6e6;
+}
+:root[data-scene=night]{
+  --sky1:#040820;--sky2:#0d1c49;--sky3:#243676;--sky4:#514d8c;
+  --sun:#f4f6ff;--glow:#9fb4ff;--cloud:#4a5796;--cshade:#2a3470;
+  --m1:#1c2b5e;--m2:#141f48;--lake1:#2c3f86;--lake2:#101a44;
+  --h1:#13323c;--h2:#0d252d;--g:#081b20;--trunk:#120c14;
+  --b1:#b98ab8;--b2:#8e6199;--b3:#d7b3d6;--stars:1;
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;color:var(--tx);background:#0b1024 center/cover fixed no-repeat;-webkit-font-smoothing:antialiased}
+#scene{position:fixed;inset:0;width:100%;height:100%;z-index:-2;display:block}
+.has-bg #scene{display:none}
+.has-bg body::before{content:"";position:fixed;inset:0;z-index:-1;background:linear-gradient(rgba(8,10,24,.15),rgba(8,10,24,.35))}
+
+/* пелюстки — лише transform, дешево для CPU/RAM */
+#petals{position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none}
+#petals i{position:absolute;top:-24px;width:11px;height:8px;background:var(--b1);border-radius:80% 0 80% 0;opacity:.85;animation:fall linear infinite}
+#petals i:nth-child(1){left:6%;animation-duration:17s;animation-delay:-2s}
+#petals i:nth-child(2){left:17%;animation-duration:23s;animation-delay:-9s;transform:scale(.7)}
+#petals i:nth-child(3){left:29%;animation-duration:19s;animation-delay:-14s}
+#petals i:nth-child(4){left:41%;animation-duration:26s;animation-delay:-5s;background:var(--b3)}
+#petals i:nth-child(5){left:53%;animation-duration:21s;animation-delay:-17s}
+#petals i:nth-child(6){left:64%;animation-duration:18s;animation-delay:-11s;background:var(--b2)}
+#petals i:nth-child(7){left:75%;animation-duration:25s;animation-delay:-3s}
+#petals i:nth-child(8){left:86%;animation-duration:20s;animation-delay:-13s;background:var(--b3)}
+#petals i:nth-child(9){left:94%;animation-duration:24s;animation-delay:-7s}
+#petals i:nth-child(10){left:47%;animation-duration:29s;animation-delay:-21s;background:var(--b2)}
+@keyframes fall{to{transform:translate3d(-140px,108vh,0) rotate(540deg)}}
+.no-petals #petals{display:none}
+@media (prefers-reduced-motion:reduce){#petals{display:none}}
+
+/* ───────── Каркас ───────── */
+.wrap{max-width:920px;margin:0 auto;padding:18px 16px 60px}
+.card{background:var(--glass);border:1px solid var(--line);border-radius:20px;padding:20px;box-shadow:0 18px 50px rgba(5,8,25,.35);-webkit-backdrop-filter:blur(14px) saturate(1.2);backdrop-filter:blur(14px) saturate(1.2);margin-top:16px}
+header.top{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.logo{font-size:22px;font-weight:800;letter-spacing:.2px;text-shadow:0 2px 14px rgba(0,0,30,.45);margin-right:auto}
+.logo small{font-weight:500;font-size:13px;opacity:.85;margin-left:8px}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
+.ib{height:36px;min-width:36px;padding:0 11px;border-radius:12px;background:var(--glass);border:1px solid var(--line);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);transition:background .15s,transform .1s;font-size:14px}
+.ib:hover{background:rgba(40,48,80,.8)}.ib:active{transform:scale(.95)}
+:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+
+/* ───────── Профіль ───────── */
+.prof{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.ava{width:62px;height:62px;border-radius:50%;flex:none;display:grid;place-items:center;font-size:26px;font-weight:800;color:#3b1730;background:linear-gradient(135deg,#ffd3e6,#ff8fbf 55%,#c49bff);box-shadow:0 0 0 3px rgba(255,255,255,.16)}
+.who{min-width:140px;flex:1}
+.name{font-size:20px;font-weight:750;border-radius:6px;padding:0 4px;margin-left:-4px;outline:0;display:inline-block;max-width:100%;word-break:break-word}
+.name:hover,.name:focus{background:var(--glass2)}
+.sub{color:var(--mut);font-size:13px;margin-top:2px}
+.stats{display:grid;grid-template-columns:repeat(5,minmax(74px,1fr));gap:8px;flex:2 1 420px}
+.st{background:var(--glass2);border:1px solid var(--line);border-radius:14px;padding:9px 10px;text-align:center}
+.st b{display:block;font-size:20px;font-weight:780;line-height:1.15}
+.st span{font-size:11.5px;color:var(--mut)}
+.hm-head{display:flex;align-items:center;gap:8px;margin:18px 0 8px;flex-wrap:wrap}
+.hm-head h3{margin:0 auto 0 0;font-size:14.5px;font-weight:600}
+.yr{padding:3px 10px;border-radius:9px;font-size:12.5px;color:var(--mut);border:1px solid transparent}
+.yr:hover{color:var(--tx)}.yr.on{background:var(--acc);color:#3b1730;font-weight:700}
+.hm-scroll{overflow-x:auto;padding-bottom:4px;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.25) transparent}
+#hm{display:block}
+#hm text{fill:var(--mut);font-size:10px}
+#hm rect{shape-rendering:geometricPrecision}
+.l0{fill:rgba(255,255,255,.09)}.l1{fill:#0e5a34}.l2{fill:#12843f}.l3{fill:#2fb552}.l4{fill:#5df07c}
+#hm rect:hover{stroke:#fff;stroke-width:1}
+.legend{display:flex;align-items:center;justify-content:flex-end;gap:4px;font-size:11.5px;color:var(--mut);margin-top:4px}
+.legend i{width:11px;height:11px;border-radius:2.5px;display:inline-block}
+.legend .l0{background:rgba(255,255,255,.09)}.legend .l1{background:#0e5a34}.legend .l2{background:#12843f}.legend .l3{background:#2fb552}.legend .l4{background:#5df07c}
+#bars{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px 18px;margin-top:14px}
+.bar{font-size:12.5px}
+.bar .bl{display:flex;justify-content:space-between;gap:8px;color:var(--mut)}
+.bar .bl b{color:var(--tx);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bar .tr{height:6px;border-radius:4px;background:var(--glass2);margin-top:4px;overflow:hidden}
+.bar .tr i{display:block;height:100%;border-radius:4px}
+#tip{position:fixed;z-index:20;pointer-events:none;background:#0a0e1f;border:1px solid var(--line);color:var(--tx);font-size:12px;padding:5px 9px;border-radius:8px;white-space:nowrap;display:none;box-shadow:0 6px 20px rgba(0,0,0,.4)}
+
+/* ───────── Задачі ───────── */
+.add{display:flex;gap:8px}
+.add input,.add select,#q,.tagnew{height:44px;border-radius:13px;border:1px solid var(--line);background:rgba(255,255,255,.08);color:var(--tx);font:inherit;padding:0 14px;outline:0;min-width:0}
+.add input{flex:1;font-size:16px}
+.add input:focus,.add select:focus,#q:focus,.tagnew:focus{border-color:var(--acc);background:rgba(255,255,255,.12)}
+.add select{max-width:150px}
+select option{background:#151b33;color:#f3f5fb}
+::placeholder{color:#8f99b3}
+.go{height:44px;padding:0 18px;border-radius:13px;background:linear-gradient(135deg,#ff9cc8,#ff78ae);color:#3b1730;font-weight:750;transition:transform .1s,filter .15s}
+.go:hover{filter:brightness(1.07)}.go:active{transform:scale(.96)}
+#tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px;align-items:center}
+.chip{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px;border-radius:999px;background:var(--glass2);border:1px solid var(--line);font-size:13px;color:var(--mut);transition:background .15s,color .15s}
+.chip:hover{color:var(--tx)}
+.chip.on{background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.4)}
+.chip i{width:9px;height:9px;border-radius:50%;flex:none}
+.chip .x{opacity:0;margin:0 -4px 0 -2px;padding:0 3px;font-size:14px;line-height:1;border-radius:6px}
+.chip:hover .x,.chip .x:focus-visible{opacity:.7}.chip .x:hover{opacity:1;color:var(--bad)}
+.tagnew{height:28px;border-radius:999px;font-size:13px;width:150px;padding:0 12px}
+.bar2{display:flex;gap:8px;align-items:center;margin-top:14px;flex-wrap:wrap}
+.tabs{display:flex;gap:2px;background:var(--glass2);border-radius:12px;padding:3px;flex-wrap:wrap}
+.tab{padding:5px 11px;border-radius:9px;font-size:13px;color:var(--mut);white-space:nowrap}
+.tab:hover{color:var(--tx)}
+.tab.on{background:rgba(255,255,255,.17);color:#fff;font-weight:600}
+.tab em{font-style:normal;opacity:.65;margin-left:4px;font-size:12px}
+#q{height:34px;border-radius:11px;font-size:13.5px;margin-left:auto;width:170px}
+#list{list-style:none;margin:12px 0 0;padding:0}
+.day{font-size:12px;color:var(--mut);text-transform:uppercase;letter-spacing:.7px;margin:16px 4px 6px}
+.task{display:flex;align-items:center;gap:11px;padding:10px 10px 10px 12px;border-radius:14px;background:rgba(255,255,255,.055);border:1px solid transparent;border-left:3px solid transparent;margin-top:6px;transition:background .15s}
+.task:hover{background:rgba(255,255,255,.1)}
+.task.s-done{border-left-color:var(--ok)}.task.s-part{border-left-color:var(--part)}.task.s-fail{border-left-color:var(--bad)}
+.dot{width:10px;height:10px;border-radius:50%;flex:none;box-shadow:0 0 0 2px rgba(255,255,255,.12)}
+.tt{flex:1;min-width:0}
+.title{display:block;word-break:break-word;outline:0;border-radius:5px}
+.title[contenteditable=true]{background:rgba(255,255,255,.14);padding:1px 5px;margin:-1px -5px}
+.s-done .title{color:#cfd6e6;text-decoration:line-through;text-decoration-color:rgba(255,255,255,.35)}
+.s-fail .title{color:#cfd6e6}
+.meta{font-size:12px;color:var(--mut)}
+.acts{display:flex;gap:5px;flex:none;align-items:center}
+.rb{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-size:16px;font-weight:800;border:1.5px solid;background:transparent;transition:background .12s,color .12s,transform .1s}
+.rb:active{transform:scale(.88)}
+.rb.done{border-color:var(--ok);color:var(--ok)}.rb.done:hover{background:var(--ok);color:#06280f}
+.rb.part{border-color:var(--part);color:var(--part)}.rb.part:hover{background:var(--part);color:#3a2500}
+.rb.fail{border-color:var(--bad);color:var(--bad)}.rb.fail:hover{background:var(--bad);color:#3a0a0a}
+.badge{font-size:12px;font-weight:700;padding:3px 9px;border-radius:999px;white-space:nowrap}
+.badge.done{background:rgba(74,222,128,.17);color:var(--ok)}
+.badge.part{background:rgba(251,191,36,.17);color:var(--part)}
+.badge.fail{background:rgba(248,113,113,.17);color:var(--bad)}
+.gb{width:30px;height:30px;border-radius:9px;color:var(--mut);font-size:15px;display:grid;place-items:center}
+.gb:hover{background:rgba(255,255,255,.14);color:var(--tx)}
+.gb.del:hover{color:var(--bad)}
+.empty{text-align:center;color:var(--mut);padding:34px 10px 20px}
+.empty b{display:block;font-size:30px;margin-bottom:6px}
+.more{display:block;margin:12px auto 0;padding:7px 16px;border-radius:10px;background:var(--glass2);color:var(--mut);font-size:13px}
+.hint{text-align:center;color:rgba(255,255,255,.75);font-size:12px;margin-top:14px;text-shadow:0 1px 8px rgba(0,0,20,.6)}
+kbd{background:rgba(10,14,30,.6);border:1px solid var(--line);border-radius:5px;padding:0 5px;font:inherit;font-size:11px}
+#toast{position:fixed;left:50%;bottom:22px;transform:translate(-50%,90px);background:#0a0e1f;border:1px solid var(--line);padding:10px 14px;border-radius:13px;display:flex;gap:12px;align-items:center;font-size:14px;transition:transform .25s;z-index:30;box-shadow:0 10px 30px rgba(0,0,0,.45);width:max-content;max-width:92vw}
+#toast.on{transform:translate(-50%,0)}
+#toast button{color:var(--acc);font-weight:700}
+@media (max-width:640px){
+  .stats{grid-template-columns:repeat(3,1fr)}
+  .add{flex-wrap:wrap}.add input{flex:1 1 100%}.add select{flex:1;max-width:none}
+  #q{width:100%;margin-left:0}
+  .card{padding:16px;border-radius:18px}
+  .rb{width:38px;height:38px}
+  .task{flex-wrap:wrap}.tt{flex:1 1 calc(100% - 24px)}.acts{margin-left:auto}
+}
+</style>
+</head>
+<body>
+
+<!-- Аніме-пейзаж: один статичний SVG, без картинок і мережі -->
+<svg id="scene" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" style="stop-color:var(--sky1)"/><stop offset=".42" style="stop-color:var(--sky2)"/>
+      <stop offset=".72" style="stop-color:var(--sky3)"/><stop offset="1" style="stop-color:var(--sky4)"/>
+    </linearGradient>
+    <radialGradient id="glow"><stop offset="0" style="stop-color:var(--glow);stop-opacity:.85"/><stop offset="1" style="stop-color:var(--glow);stop-opacity:0"/></radialGradient>
+    <linearGradient id="lake" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--lake1)"/><stop offset="1" style="stop-color:var(--lake2)"/></linearGradient>
+    <g id="cl"><circle cx="62" cy="84" r="40"/><circle cx="118" cy="62" r="54"/><circle cx="186" cy="52" r="62"/><circle cx="250" cy="76" r="46"/><circle cx="300" cy="94" r="30"/><rect x="40" y="84" width="280" height="42" rx="21"/></g>
+  </defs>
+  <rect width="1600" height="900" fill="url(#sky)"/>
+  <g fill="#fff" style="opacity:var(--stars)">
+    <circle cx="90" cy="70" r="1.6"/><circle cx="210" cy="150" r="1.1"/><circle cx="330" cy="50" r="1.8"/><circle cx="470" cy="120" r="1.2"/><circle cx="560" cy="40" r="1.5"/><circle cx="690" cy="170" r="1"/><circle cx="780" cy="80" r="1.9"/><circle cx="900" cy="30" r="1.2"/><circle cx="980" cy="140" r="1.5"/><circle cx="1090" cy="60" r="1.1"/><circle cx="1330" cy="90" r="1.7"/><circle cx="1430" cy="40" r="1.2"/><circle cx="1510" cy="160" r="1.6"/><circle cx="1560" cy="70" r="1"/><circle cx="140" cy="250" r="1.2"/><circle cx="420" cy="230" r="1.5"/><circle cx="840" cy="240" r="1.1"/><circle cx="1460" cy="270" r="1.3"/><circle cx="620" cy="290" r="1"/><circle cx="1040" cy="260" r="1.4"/>
+  </g>
+  <circle cx="1210" cy="250" r="230" fill="url(#glow)"/>
+  <circle cx="1210" cy="250" r="54" style="fill:var(--sun)"/>
+  <!-- купчасті хмари -->
+  <g style="fill:var(--cshade)" opacity=".9">
+    <use href="#cl" transform="translate(120 150) scale(1.5)"/><use href="#cl" transform="translate(1230 330) scale(1.15)"/><use href="#cl" transform="translate(640 110) scale(.8)"/><use href="#cl" transform="translate(-60 400) scale(1.1)"/><use href="#cl" transform="translate(880 400) scale(.7)"/>
+  </g>
+  <g style="fill:var(--cloud)">
+    <use href="#cl" transform="translate(128 132) scale(1.46)"/><use href="#cl" transform="translate(1236 316) scale(1.12)"/><use href="#cl" transform="translate(644 100) scale(.78)"/><use href="#cl" transform="translate(-54 386) scale(1.07)"/><use href="#cl" transform="translate(884 392) scale(.68)"/>
+  </g>
+  <!-- гори -->
+  <path style="fill:var(--m1)" d="M0 600 L150 470 260 540 420 380 560 520 700 430 850 560 1010 410 1150 530 1290 440 1440 560 1600 470V720H0Z"/>
+  <path fill="#fff" opacity=".55" d="M420 380l-46 46 30-8 22 22 26-18 30 14zM1010 410l-40 38 28-6 18 18 22-16 22 8z"/>
+  <path style="fill:var(--m2)" d="M0 660 L120 590 300 640 470 540 640 630 800 570 960 650 1130 560 1300 640 1460 580 1600 630V740H0Z"/>
+  <!-- озеро -->
+  <rect y="690" width="1600" height="110" fill="url(#lake)"/>
+  <g fill="#fff" opacity=".35"><rect x="1120" y="712" width="180" height="3" rx="2"/><rect x="1160" y="728" width="110" height="3" rx="2"/><rect x="1090" y="744" width="220" height="3" rx="2"/><rect x="520" y="722" width="140" height="2.5" rx="2"/><rect x="760" y="752" width="90" height="2.5" rx="2"/></g>
+  <!-- пагорби й трава -->
+  <path style="fill:var(--h1)" d="M0 760 C220 690 420 720 640 760 S1080 700 1300 740 1520 720 1600 730V900H0Z"/>
+  <path style="fill:var(--h2)" d="M0 810 C260 760 520 800 780 820 S1280 770 1600 800V900H0Z"/>
+  <path style="fill:var(--g)" d="M0 860 C300 830 620 870 900 862 S1380 840 1600 858V900H0Z"/>
+  <!-- сакура -->
+  <g style="stroke:var(--trunk)" fill="none" stroke-linecap="round">
+    <path stroke-width="30" d="M118 905 C128 800 110 720 150 640"/>
+    <path stroke-width="18" d="M150 640 C170 580 230 560 262 505"/><path stroke-width="14" d="M146 660 C110 600 80 580 52 530"/>
+    <path stroke-width="9" d="M232 548 C280 540 320 520 352 488"/><path stroke-width="8" d="M178 600 C190 540 170 500 182 452"/>
+  </g>
+  <g style="fill:var(--b2)"><circle cx="60" cy="505" r="62"/><circle cx="180" cy="430" r="78"/><circle cx="290" cy="480" r="66"/><circle cx="370" cy="470" r="46"/><circle cx="120" cy="560" r="44"/><circle cx="236" cy="552" r="40"/></g>
+  <g style="fill:var(--b1)"><circle cx="46" cy="482" r="48"/><circle cx="166" cy="402" r="62"/><circle cx="280" cy="455" r="52"/><circle cx="362" cy="452" r="34"/><circle cx="110" cy="540" r="32"/><circle cx="104" cy="446" r="40"/><circle cx="228" cy="528" r="28"/></g>
+  <g style="fill:var(--b3)" opacity=".85"><circle cx="150" cy="382" r="30"/><circle cx="268" cy="436" r="26"/><circle cx="36" cy="464" r="22"/><circle cx="352" cy="440" r="16"/><circle cx="96" cy="430" r="18"/></g>
+</svg>
+<div id="petals" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+
+<div class="wrap">
+  <header class="top">
+    <div class="logo">🌸 Мітки<small>задачі та результати</small></div>
+    <button class="ib" id="bScene" title="Змінити час доби">☀️</button>
+    <button class="ib" id="bPetals" title="Пелюстки увімк./вимк.">🍃</button>
+    <button class="ib" id="bBg" title="Свій фон (картинка з комп’ютера)">🖼</button>
+    <button class="ib" id="bExp" title="Зберегти резервну копію у файл">⬇ Експорт</button>
+    <button class="ib" id="bImp" title="Відновити з файлу">⬆ Імпорт</button>
+  </header>
+
+  <section class="card" aria-label="Профіль">
+    <div class="prof">
+      <div class="ava" id="ava">М</div>
+      <div class="who">
+        <div class="name" id="name" contenteditable="true" spellcheck="false" title="Натисни, щоб змінити ім’я"></div>
+        <div class="sub" id="sub"></div>
+      </div>
+      <div class="stats" id="stats"></div>
+    </div>
+    <div class="hm-head"><h3 id="hmTitle"></h3><div id="years"></div></div>
+    <div class="hm-scroll" id="hmScroll"><svg id="hm"></svg></div>
+    <div class="legend">Менше <i class="l0"></i><i class="l1"></i><i class="l2"></i><i class="l3"></i><i class="l4"></i> Більше</div>
+    <div id="bars"></div>
+  </section>
+
+  <section class="card" aria-label="Задачі">
+    <form class="add" id="fAdd" autocomplete="off">
+      <input id="inp" placeholder="Нова задача… (Enter — додати)" maxlength="300" aria-label="Нова задача">
+      <select id="selTag" aria-label="Мітка"></select>
+      <button class="go" type="submit">Додати</button>
+    </form>
+    <div id="tags"></div>
+    <div class="bar2">
+      <div class="tabs" id="tabs"></div>
+      <input id="q" type="search" placeholder="Пошук…" aria-label="Пошук">
+    </div>
+    <ul id="list"></ul>
+  </section>
+  <div class="hint"><kbd>/</kbd> — нова задача · подвійний клік по назві — редагувати · ✓ виконано · ◐ частково · ✗ не вдалося</div>
+</div>
+
+<div id="tip"></div>
+<div id="toast" role="status"><span></span><button hidden></button></div>
+<input type="file" id="fImp" accept="application/json,.json" hidden>
+<input type="file" id="fBg" accept="image/*" hidden>
+
+<script>
+'use strict';
+/* ───────── Дані ───────── */
+const KEY='mitky.v1', BG='mitky.bg';
+const PAL=['#ff8fbf','#7ee0a1','#6fb6ff','#ffd166','#c49bff','#ff9e6b','#5fe0d8','#f47174','#b8e06a','#9aa7ff'];
+const MON=['січ','лют','бер','кві','тра','чер','лип','сер','вер','жов','лис','гру'];
+const SCENES=['day','sunset','night'], SICON={day:'☀️',sunset:'🌇',night:'🌙'};
+const RES={done:['✓','Виконано'],part:['◐','Частково'],fail:['✗','Не вдалося']};
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+const p2=n=>String(n).padStart(2,'0');
+const dk=t=>{const d=new Date(t);return d.getFullYear()+'-'+p2(d.getMonth()+1)+'-'+p2(d.getDate())};
+const pl=(n,f)=>{const a=Math.abs(n)%100,b=a%10;return f[a>10&&a<20?2:b===1?0:b>1&&b<5?1:2]};
+const fmtDay=k=>{const[y,m,d]=k.split('-');return +d+' '+MON[m-1]+'. '+y};
+
+function fresh(){return{name:'Мій профіль',scene:'day',petals:true,tasks:[],
+  tags:[{id:'t1',name:'Навчання',color:PAL[2]},{id:'t2',name:'Спорт',color:PAL[1]},{id:'t3',name:'Робота',color:PAL[3]}]}}
+function clean(d){ // перевірка даних зі сховища / імпорту
+  if(!d||typeof d!=='object'||!Array.isArray(d.tasks))return null;
+  const o=fresh(), ids=new Set(), seen=new Set(), okT=x=>+x>0&&+x<8.64e15;
+  o.name=typeof d.name==='string'&&d.name.trim()?d.name.trim().slice(0,40):o.name;
+  o.scene=SCENES.includes(d.scene)?d.scene:'day'; o.petals=d.petals!==false;
+  o.tags=(Array.isArray(d.tags)?d.tags:[]).filter(t=>t&&typeof t.name==='string'&&t.name.trim()).slice(0,60).map((t,i)=>{
+    let id=String(t.id||uid()+i).slice(0,24); if(ids.has(id))id=uid()+i; ids.add(id);
+    return{id,name:t.name.trim().slice(0,24),color:/^#[0-9a-f]{6}$/i.test(t.color)?t.color:PAL[i%PAL.length]}});
+  o.tasks=d.tasks.filter(t=>t&&typeof t.title==='string'&&t.title.trim()).map((t,i)=>{
+    const st=Object.prototype.hasOwnProperty.call(RES,t.status)?t.status:'open', c=okT(t.created)?+t.created:Date.now(), tg=String(t.tag).slice(0,24);
+    let id=String(t.id||uid()+i).slice(0,24); if(seen.has(id))id=uid()+i; seen.add(id);
+    return{id,title:t.title.trim().slice(0,300),tag:ids.has(tg)?tg:null,
+      created:c,status:st,resolvedAt:st==='open'?null:(okT(t.resolvedAt)?+t.resolvedAt:c)}});
+  return o}
+let S; try{const raw=localStorage.getItem(KEY);if(raw){try{S=clean(JSON.parse(raw))}catch(e){} if(!S)localStorage.setItem(KEY+'.broken',raw)}}catch(e){} S=S||fresh(); // пошкоджені дані не губимо — лишаємо копію
+const V={status:'open',tag:null,q:'',range:'last',limit:150}; // стан інтерфейсу (не зберігається)
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){toast('Не вдалося зберегти: сховище браузера переповнене')}}
+const tagBy=id=>S.tags.find(t=>t.id===id);
+
+/* ───────── Тост ───────── */
+let tT; const hideToast=()=>{clearTimeout(tT);$('#toast').classList.remove('on');$('#toast').lastElementChild.onclick=null}; // дані замінено — старе «скасувати» вже недійсне
+function toast(msg,label,fn){
+  const el=$('#toast'),b=el.lastElementChild; el.firstElementChild.textContent=msg;
+  b.hidden=!label; b.textContent=label||''; b.onclick=()=>{el.classList.remove('on');fn&&fn()};
+  el.classList.add('on'); clearTimeout(tT); tT=setTimeout(()=>el.classList.remove('on'),label?6000:3200)}
+
+/* ───────── Профіль і статистика ───────── */
+function dayMap(){const m={};for(const t of S.tasks){if(t.status==='open')continue;const k=dk(t.resolvedAt),c=m[k]||(m[k]={n:0,done:0,part:0,fail:0});c.n++;c[t.status]++}return m}
+function streaks(m){ // серії днів, де є хоча б одна ✓ або ◐
+  const act=k=>m[k]&&m[k].done+m[k].part>0, keys=Object.keys(m).filter(act).sort();
+  let best=0,run=0,prev=null;
+  for(const k of keys){const[y,mo,d]=k.split('-').map(Number);const exp=prev&&dk(new Date(prev[0],prev[1]-1,prev[2]+1));
+    run=exp===k?run+1:1;if(run>best)best=run;prev=[y,mo,d]}
+  const n=new Date();let cur=0,i=act(dk(n))?0:1;
+  while(act(dk(new Date(n.getFullYear(),n.getMonth(),n.getDate()-i)))){cur++;i++}
+  return{cur,best}}
+function renderProfile(){
+  const m=dayMap(), now=new Date(), yNow=now.getFullYear();
+  if($('#name')!==document.activeElement)$('#name').textContent=S.name;
+  $('#ava').textContent=(Array.from(S.name.trim())[0]||'М').toUpperCase();
+  // діапазон
+  let start,end;
+  if(V.range==='last'){end=new Date(yNow,now.getMonth(),now.getDate());start=new Date(yNow,now.getMonth(),now.getDate()-364)}
+  else{start=new Date(V.range,0,1);end=new Date(V.range,11,31)}
+  const off=(start.getDay()+6)%7, gy=start.getFullYear(), gm=start.getMonth(), gd=start.getDate()-off;
+  let cells='',labels='',lastM=-1,lastCol=-9,tot=0,done=0,part=0,fail=0,i=0;
+  for(;;i++){const d=new Date(gy,gm,gd+i); if(d>end)break; if(d<start)continue;
+    const col=i/7|0,row=i%7,k=dk(d),c=m[k],n=c?c.n:0,x=30+col*14;
+    if(c){tot+=n;done+=c.done;part+=c.part;fail+=c.fail}
+    if(d.getMonth()!==lastM){lastM=d.getMonth();if(col-lastCol>=3){labels+='<text x="'+x+'" y="10">'+MON[lastM]+'</text>';lastCol=col}}
+    cells+='<rect class="l'+(n?n<2?1:n<4?2:n<6?3:4:0)+'" x="'+x+'" y="'+(18+row*14)+'" width="11" height="11" rx="2.5" data-d="'+k+'"/>'}
+  const w=30+(((i-1)/7|0)+1)*14, hm=$('#hm');
+  hm.setAttribute('width',w);hm.setAttribute('height',118);hm.setAttribute('viewBox','0 0 '+w+' 118');
+  hm.innerHTML=labels+'<text x="0" y="27">Пн</text><text x="0" y="55">Ср</text><text x="0" y="83">Пт</text><text x="0" y="111">Нд</text>'+cells;
+  hm._m=m;
+  $('#hmTitle').textContent=tot+' '+pl(tot,['позначка','позначки','позначок'])+(V.range==='last'?' за останній рік':' у '+V.range+' році');
+  // роки
+  const ys=new Set([yNow]);for(const k in m)ys.add(+k.slice(0,4));
+  $('#years').innerHTML='<button class="yr'+(V.range==='last'?' on':'')+'" data-y="last">Останній рік</button>'+
+    [...ys].sort((a,b)=>b-a).map(y=>'<button class="yr'+(V.range===y?' on':'')+'" data-y="'+y+'">'+y+'</button>').join('');
+  // плитки
+  const s=streaks(m), rate=tot?Math.round((done+part*.5)/tot*100):0, open=S.tasks.filter(t=>t.status==='open').length;
+  $('#stats').innerHTML=[[tot,'позначок'],[done,'виконано'],[rate+'%','успішність'],['🔥 '+s.cur,'серія, днів'],['🏆 '+s.best,'рекорд серії']]
+    .map(a=>'<div class="st"><b>'+a[0]+'</b><span>'+a[1]+'</span></div>').join('');
+  $('#sub').textContent=open+' '+pl(open,['активна задача','активні задачі','активних задач'])+' · '+fail+' не вдалося · '+part+' частково';
+  // розбивка за мітками (у вибраному діапазоні)
+  const a=+start,b=+end+864e5,by=Object.create(null);
+  for(const t of S.tasks){if(t.status==='open'||t.resolvedAt<a||t.resolvedAt>=b)continue;const o=by[t.tag||'']||(by[t.tag||'']={n:0,ok:0});o.n++;if(t.status==='done')o.ok++}
+  $('#bars').innerHTML=Object.keys(by).sort((x,y)=>by[y].n-by[x].n).map(id=>{const t=tagBy(id),o=by[id],c=t?t.color:'#8f99b3';
+    return'<div class="bar"><div class="bl"><b>'+esc(t?t.name:'Без мітки')+'</b><span>'+o.ok+' / '+o.n+' ✓</span></div><div class="tr"><i style="width:'+(o.n?o.ok/o.n*100:0)+'%;background:'+c+'"></i></div></div>'}).join('');
+}
+// підказка теплокарти — один елемент, делегування подій
+const tip=$('#tip');
+$('#hm').addEventListener('mousemove',e=>{const k=e.target.dataset&&e.target.dataset.d;if(!k){tip.style.display='none';return}
+  const c=$('#hm')._m[k];tip.textContent=(c?c.n+' '+pl(c.n,['позначка','позначки','позначок'])+' (✓'+c.done+' ◐'+c.part+' ✗'+c.fail+')':'Немає позначок')+' — '+fmtDay(k);
+  tip.style.display='block';const w=tip.offsetWidth;tip.style.left=Math.max(6,Math.min(innerWidth-w-6,e.clientX-w/2))+'px';tip.style.top=(e.clientY-38)+'px'});
+$('#hm').addEventListener('mouseleave',()=>tip.style.display='none');
+$('#years').addEventListener('click',e=>{const y=e.target.dataset.y;if(!y)return;V.range=y==='last'?'last':+y;renderProfile();scrollHm()});
+const scrollHm=()=>{const s=$('#hmScroll');s.scrollLeft=V.range==='last'?s.scrollWidth:0};
+$('#name').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();e.target.blur()}});
+$('#name').addEventListener('blur',e=>{S.name=e.target.textContent.trim().slice(0,40)||'Мій профіль';save();renderProfile()});
+
+/* ───────── Мітки ───────── */
+let addingTag=false;
+function renderTags(){
+  $('#tags').innerHTML='<button class="chip'+(V.tag===null?' on':'')+'" data-tag="">Усі мітки</button>'+
+    S.tags.map(t=>'<span class="chip'+(V.tag===t.id?' on':'')+'" data-tag="'+esc(t.id)+'" role="button" tabindex="0"><i style="background:'+t.color+'"></i>'+esc(t.name)+
+      '<button class="x" data-del="'+esc(t.id)+'" title="Видалити мітку" aria-label="Видалити мітку '+esc(t.name)+'">×</button></span>').join('')+
+    (addingTag?'<input class="tagnew" id="tagNew" maxlength="24" placeholder="Назва мітки, Enter">':'<button class="chip" data-new="1">＋ мітка</button>');
+  const sel=$('#selTag'),cur=V.tag||sel.value;
+  sel.innerHTML='<option value="">Без мітки</option>'+S.tags.map(t=>'<option value="'+esc(t.id)+'">'+esc(t.name)+'</option>').join('');
+  sel.value=tagBy(cur)?cur:'';
+  if(addingTag){const i=$('#tagNew');i.focus();
+    i.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();const n=i.value.trim();if(n){S.tags.push({id:uid(),name:n,color:PAL[S.tags.length%PAL.length]});save()}addingTag=false;renderTags()}
+      else if(e.key==='Escape'){addingTag=false;renderTags()}};
+    i.onblur=()=>{if(addingTag){addingTag=false;renderTags()}}}
+}
+function tagClick(e){
+  const del=e.target.closest('[data-del]');
+  if(del){const t=tagBy(del.dataset.del);if(t&&confirm('Видалити мітку «'+t.name+'»? Задачі залишаться без мітки.')){
+    S.tags=S.tags.filter(x=>x!==t);S.tasks.forEach(x=>{if(x.tag===t.id)x.tag=null});if(V.tag===t.id)V.tag=null;save();render()}return}
+  if(e.target.closest('[data-new]')){addingTag=true;renderTags();return}
+  const c=e.target.closest('[data-tag]');if(!c)return;
+  V.tag=c.dataset.tag||null;V.limit=150;renderTags();renderTasks()}
+$('#tags').addEventListener('click',tagClick);
+$('#tags').addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.matches('span.chip')){e.preventDefault();tagClick(e)}});
+
+/* ───────── Задачі ───────── */
+function renderTasks(){
+  const q=V.q.toLowerCase(), base=S.tasks.filter(t=>(V.tag===null||t.tag===V.tag)&&(!q||t.title.toLowerCase().includes(q)));
+  const cnt={open:0,done:0,part:0,fail:0};for(const t of base)cnt[t.status]++;
+  $('#tabs').innerHTML=[['open','Активні'],['done','✓ Виконані'],['part','◐ Частково'],['fail','✗ Не вдалося'],['all','Усі']]
+    .map(a=>'<button class="tab'+(V.status===a[0]?' on':'')+'" data-s="'+a[0]+'">'+a[1]+'<em>'+(a[0]==='all'?base.length:cnt[a[0]])+'</em></button>').join('');
+  const open=base.filter(t=>t.status==='open').sort((a,b)=>b.created-a.created);
+  const res=base.filter(t=>V.status==='all'?t.status!=='open':t.status===V.status).sort((a,b)=>b.resolvedAt-a.resolvedAt);
+  let h='';
+  if(V.status==='open'||V.status==='all')h+=open.map(row).join('');
+  if(V.status!=='open'){const today=dk(Date.now()),yest=dk(Date.now()-864e5);let last='';
+    for(const t of res.slice(0,V.limit)){const k=dk(t.resolvedAt);
+      if(k!==last){last=k;h+='<li class="day">'+(k===today?'Сьогодні':k===yest?'Вчора':fmtDay(k))+'</li>'}h+=row(t)}
+    if(res.length>V.limit)h+='<li><button class="more" data-more="1">Показати ще ('+(res.length-V.limit)+')</button></li>'}
+  $('#list').innerHTML=h||'<li class="empty"><b>'+(V.status==='open'?'🌿':'🍃')+'</b>'+(q?'Нічого не знайдено':V.status==='open'?'Активних задач немає — додай першу вище':'Тут поки порожньо')+'</li>';
+}
+function row(t){
+  const tag=tagBy(t.tag), o=t.status==='open', d=new Date(o?t.created:t.resolvedAt);
+  const when=o?'створено '+d.getDate()+' '+MON[d.getMonth()]+'.':'позначено о '+p2(d.getHours())+':'+p2(d.getMinutes());
+  return'<li class="task s-'+t.status+'" data-id="'+esc(t.id)+'"><span class="dot" style="background:'+(tag?tag.color:'transparent')+'"></span>'+
+    '<div class="tt"><span class="title">'+esc(t.title)+'</span><span class="meta">'+(tag?esc(tag.name)+' · ':'')+when+'</span></div><div class="acts">'+
+    (o?'<button class="rb done" data-act="done" title="Виконано" aria-label="Виконано">✓</button><button class="rb part" data-act="part" title="Частково" aria-label="Частково">◐</button><button class="rb fail" data-act="fail" title="Не вдалося" aria-label="Не вдалося">✗</button>'
+      :'<span class="badge '+t.status+'">'+RES[t.status][0]+' '+RES[t.status][1]+'</span><button class="gb" data-act="open" title="Повернути в активні" aria-label="Повернути в активні">↺</button>')+
+    '<button class="gb del" data-act="del" title="Видалити" aria-label="Видалити">🗑</button></div></li>'}
+function render(){renderProfile();renderTags();renderTasks()}
+
+$('#fAdd').addEventListener('submit',e=>{e.preventDefault();const i=$('#inp'),v=i.value.trim();if(!v)return;
+  S.tasks.push({id:uid(),title:v.slice(0,300),tag:$('#selTag').value||null,created:Date.now(),status:'open',resolvedAt:null});
+  i.value='';save();if(V.status!=='open'&&V.status!=='all')V.status='open';renderProfile();renderTasks()});
+$('#tabs').addEventListener('click',e=>{const b=e.target.closest('[data-s]');if(b){V.status=b.dataset.s;V.limit=150;renderTasks()}});
+let qT;$('#q').addEventListener('input',e=>{clearTimeout(qT);qT=setTimeout(()=>{V.q=e.target.value.trim();renderTasks()},120)});
+$('#list').addEventListener('click',e=>{
+  if(e.target.closest('[data-more]')){V.limit+=150;renderTasks();return}
+  const b=e.target.closest('[data-act]');if(!b)return;
+  const id=b.closest('.task').dataset.id,idx=S.tasks.findIndex(t=>t.id===id),t=S.tasks[idx];if(!t)return;
+  const act=b.dataset.act,prev={status:t.status,resolvedAt:t.resolvedAt};
+  const undo=()=>{const x=S.tasks.find(y=>y.id===id);if(x){Object.assign(x,prev);save();renderProfile();renderTasks()}};
+  if(act==='del'){S.tasks.splice(idx,1);toast('Задачу видалено','Повернути',()=>{S.tasks.splice(Math.min(idx,S.tasks.length),0,t);save();renderProfile();renderTasks()})}
+  else if(act==='open'){t.status='open';t.resolvedAt=null;toast('Повернуто в активні','Скасувати',undo)}
+  else{t.status=act;t.resolvedAt=Date.now();toast(RES[act][0]+' '+RES[act][1]+': '+(t.title.length>40?t.title.slice(0,40)+'…':t.title),'Скасувати',undo)}
+  save();renderProfile();renderTasks()});
+// редагування назви подвійним кліком
+$('#list').addEventListener('dblclick',e=>{const el=e.target.closest('.title');if(!el||el.isContentEditable)return;
+  const t=S.tasks.find(x=>x.id===el.closest('.task').dataset.id);if(!t)return;
+  el.contentEditable='true';el.focus();getSelection().selectAllChildren(el);
+  let cancel=false;
+  el.onkeydown=k=>{if(k.key==='Enter'){k.preventDefault();el.blur()}else if(k.key==='Escape'){cancel=true;el.blur()}};
+  el.onblur=()=>{const v=el.textContent.trim().slice(0,300);if(!cancel&&v&&v!==t.title){t.title=v;save()}renderTasks()}});
+document.addEventListener('keydown',e=>{if(e.key==='/'&&!e.ctrlKey&&!e.metaKey&&!/^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName)&&!e.target.isContentEditable){e.preventDefault();$('#inp').focus()}});
+
+/* ───────── Фон, сцена, резервні копії ───────── */
+function applyLook(){const r=document.documentElement;r.dataset.scene=S.scene;r.classList.toggle('no-petals',!S.petals);$('#bScene').textContent=SICON[S.scene]}
+function applyBg(d){document.documentElement.classList.toggle('has-bg',!!d);document.body.style.backgroundImage=d?'url('+d+')':'';
+  $('#bBg').textContent=d?'🖼 ✕':'🖼';$('#bBg').title=d?'Прибрати свій фон':'Свій фон (картинка з комп’ютера)'}
+$('#bScene').onclick=()=>{S.scene=SCENES[(SCENES.indexOf(S.scene)+1)%3];save();applyLook()};
+$('#bPetals').onclick=()=>{S.petals=!S.petals;save();applyLook()};
+$('#bBg').onclick=()=>{if(document.documentElement.classList.contains('has-bg')){try{localStorage.removeItem(BG)}catch(e){}applyBg('')}else $('#fBg').click()};
+$('#fBg').onchange=e=>{const f=e.target.files[0];e.target.value='';if(!f)return;
+  const img=new Image(),u=URL.createObjectURL(f);
+  img.onerror=()=>{URL.revokeObjectURL(u);toast('Не вдалося відкрити зображення')};
+  img.onload=()=>{const k=Math.min(1,1920/Math.max(img.width,img.height)),c=document.createElement('canvas');
+    c.width=Math.max(1,img.width*k|0);c.height=Math.max(1,img.height*k|0);c.getContext('2d').drawImage(img,0,0,c.width,c.height);URL.revokeObjectURL(u);
+    const d=c.toDataURL('image/jpeg',.82);c.width=c.height=0; // одразу звільняємо пам’ять полотна
+    try{localStorage.setItem(BG,d)}catch(x){toast('Фон застосовано, але він завеликий, щоб зберегтися')}applyBg(d)};
+  img.src=u};
+$('#bExp').onclick=()=>{const a=document.createElement('a'),u=URL.createObjectURL(new Blob([JSON.stringify(S,null,1)],{type:'application/json'}));
+  a.href=u;a.download='mitky-'+dk(Date.now())+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),1000)};
+$('#bImp').onclick=()=>$('#fImp').click();
+$('#fImp').onchange=e=>{const f=e.target.files[0];e.target.value='';if(!f)return;
+  f.text().then(x=>{let d=null;try{d=clean(JSON.parse(x))}catch(err){}
+    if(!d){toast('Це не файл резервної копії «Мітки»');return}
+    if(confirm('Замінити поточні дані на дані з файлу ('+d.tasks.length+' '+pl(d.tasks.length,['задача','задачі','задач'])+')?')){S=d;V.tag=null;hideToast();save();applyLook();render();scrollHm()}})};
+
+/* ───────── Старт ───────── */
+applyLook();let bg='';try{bg=localStorage.getItem(BG)||''}catch(e){}applyBg(bg);
+render();scrollHm();
+// синхронізація між вкладками та оновлення «сьогодні» після півночі
+addEventListener('storage',e=>{if(e.key===KEY&&e.newValue){try{const d=clean(JSON.parse(e.newValue));if(d){S=d;hideToast();applyLook();render()}}catch(x){}}});
+let today=dk(Date.now());document.addEventListener('visibilitychange',()=>{if(!document.hidden&&dk(Date.now())!==today){today=dk(Date.now());render();scrollHm()}});
+</script>
+</body>
+</html>
